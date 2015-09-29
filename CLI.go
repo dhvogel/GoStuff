@@ -111,8 +111,7 @@ func recurseFiles(path string, depth int) {
             fmt.Println(string(jsonOutput))
         }     
     } else if strings.ToUpper(config.Output) == "YAML" {
-        fmt.Print("YAML")
-        YAMLFiles:= getJSON(files, path, depth)
+        YAMLFiles := getJSON(files, path, depth)
         for i:=0; i<len(YAMLFiles); i++ {
             yamlOutput, _ := yaml.Marshal(YAMLFiles[i])
             fmt.Println(string(yamlOutput))
