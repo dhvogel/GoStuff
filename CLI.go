@@ -11,6 +11,8 @@ import (
     "encoding/json"
     "time"
     //"errors"
+    "io/ioutil"
+
 )
 
 type Config struct {
@@ -24,7 +26,7 @@ type File struct {
     IsLink          bool        `json:"IsLink"`
     IsDir           bool        `json:"IsDir"`
     //LinksTo         bool        `json:"LinksTo"`
-    Size            int64         `json:"Size"`
+    Size            int64       `json:"Size"`
     Name            string      `json:"Name"`
     //Children        []File      `json:"File"` 
 }
@@ -34,7 +36,7 @@ var counter int = 0
 
 func init() {
     const (
-        recursiveDefault = false
+        recursiveDefault = true
         recursiveDescription   = "Trawl files recursively if true, iteratively if not. Default is iterative."
 
         pathDefault = "/Users/dhvogel/Documents/CS341"
@@ -53,7 +55,7 @@ func init() {
 
 func walkFiles(path string, file os.FileInfo, err error) error {
     if strings.ToUpper(config.Output) == "TEXT" {
-        printTextFile(path, file)
+        iterateFiles(path, file)
     } else if strings.ToUpper(config.Output) == "JSON" {
         printJSONFile(path, file)
     } else if strings.ToUpper(config.Output) == "YAML" {
@@ -63,7 +65,7 @@ func walkFiles(path string, file os.FileInfo, err error) error {
 }
 
 //Cannot have '/' in filesystem (other than to separate directories). Or else this will get messed up
-func printTextFile(path string, file os.FileInfo) {
+func iterateFiles(path string, file os.FileInfo) {
     for i:=0; i<len(strings.Split(path, "/")); i++ {
         fmt.Print(" ")
     }
@@ -79,6 +81,30 @@ func printTextFile(path string, file os.FileInfo) {
         fmt.Print("* (symlink)")
     }
     fmt.Print("\n")
+}
+
+func recurseFiles(path string, depth int) {
+    var dir bool
+    depth++;
+    Files, _ := ioutil.ReadDir(path)
+    for i:=0; i<len(Files); i++ {
+        dir = false
+        for j:=0; j<depth; j++ {
+            fmt.Print(" ");
+        }
+        fmt.Print(Files[i].Name())
+        if (Files[i].IsDir()) {
+            fmt.Print("/")
+            dir = true
+        }
+        if Files[i].Mode()&os.ModeSymlink == os.ModeSymlink {
+            fmt.Print("* (symlink)")
+        }
+        fmt.Print("\n")
+        if (dir == true) {  
+            recurseFiles(path + "/" + Files[i].Name(), depth)
+        }
+    }
 }
 
 func printJSONFile(path string, file os.FileInfo) {
@@ -97,6 +123,8 @@ func printYAMLFile(path string, file os.FileInfo) {
 
 
 
+
+
 func main() {
     flag.Parse()
 
@@ -106,6 +134,10 @@ func main() {
 
     root := config.Path
     fmt.Println(root)
-    filepath.Walk(root, walkFiles)
+    if config.Recursive == false {
+        filepath.Walk(root, walkFiles)
+    } else {
+        recurseFiles(root, 0)
+    }
 
 }
