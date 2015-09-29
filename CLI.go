@@ -12,6 +12,7 @@ import (
     "time"
     //"errors"
     "io/ioutil"
+    "github.com/ghodss/yaml"
 
 )
 
@@ -106,11 +107,16 @@ func recurseFiles(path string, depth int) {
     } else if strings.ToUpper(config.Output) == "JSON" {
         JSONFiles:= getJSON(files, path, depth)
         for i:=0; i<len(JSONFiles); i++ {
-            jsonOutput, _ := json.Marshal(JSONFiles[i])
+            jsonOutput, _ := json.MarshalIndent(JSONFiles[i], "", "     ")
             fmt.Println(string(jsonOutput))
         }     
     } else if strings.ToUpper(config.Output) == "YAML" {
-        //print(files, depth)
+        fmt.Print("YAML")
+        YAMLFiles:= getJSON(files, path, depth)
+        for i:=0; i<len(YAMLFiles); i++ {
+            yamlOutput, _ := yaml.Marshal(YAMLFiles[i])
+            fmt.Println(string(yamlOutput))
+        } 
     }
 
 }
