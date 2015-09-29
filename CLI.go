@@ -1,3 +1,5 @@
+//Dan Vogel
+//Must include link handler
 package main
 
 import (
@@ -6,12 +8,24 @@ import (
     "os"
     "path/filepath"
     "strings"
+    "encoding/json"
+    "time"
 )
 
 type Config struct {
     Recursive 	bool
     Path     	string
     Output		string
+}
+
+type File struct {
+    ModifiedTime    time.Time   `json:"ModifiedTime"`
+    //(NEED TO FIGURE OUT) IsLink          bool        `json:"IsLink"`
+    IsDir           bool        `json:"IsDir"`
+    //LinksTo         bool        `json:"LinksTo"`
+    Size            int64         `json:"Size"`
+    Name            string      `json:"Name"`
+    //Children        []File      `json:"File"`
 }
 
 var config *Config
@@ -25,7 +39,7 @@ func init() {
         pathDefault = "/Users/dhvogel/Documents/CS341"
         pathDescription   = "Root directory to begin file listing. Default is /Users/dhvogel/Documents/CS341."
 
-        outputDefault = "text"
+        outputDefault = "json"
         outputDescription   = "Accepts 3 arguments, json|yaml|text. Default is text."
     )
     config = &Config{}
@@ -37,12 +51,18 @@ func init() {
 }
 
 func walkFiles(path string, file os.FileInfo, err error) error {
-    printFile(path, file, config.Output)
+    if strings.ToUpper(config.Output) == "TEXT" {
+        printTextFile(path, file)
+    } else if strings.ToUpper(config.Output) == "JSON" {
+        printJSONFile(path, file)
+    } else if strings.ToUpper(config.Output) == "YAML" {
+        printYAMLFile(path, file)
+    }
     return nil
 }
 
 //Cannot have '/' in filesystem (other than to separate directories). Or else this will get messed up
-func printFile(path string, file os.FileInfo, mode string) {
+func printTextFile(path string, file os.FileInfo) {
     for i:=0; i<len(strings.Split(path, "/")); i++ {
         fmt.Print(" ")
     }
@@ -51,6 +71,19 @@ func printFile(path string, file os.FileInfo, mode string) {
         fmt.Print("/")
     }
     fmt.Print("\n")
+}
+
+func printJSONFile(path string, file os.FileInfo) {
+    JSONFile := &File{ModifiedTime: file.ModTime(), 
+                      IsDir: file.IsDir(), 
+                      Size: file.Size(), 
+                      Name: file.Name()}
+    jsonOutput, _ := json.Marshal(JSONFile)
+    fmt.Println(string(jsonOutput))
+}
+
+func printYAMLFile(path string, file os.FileInfo) {
+
 }
 
 
@@ -63,7 +96,6 @@ func main() {
     fmt.Println("Output type:", config.Output)
 
     root := config.Path
-    err := filepath.Walk(root, walkFiles)
-    fmt.Printf("filepath.Walk() returned %v\n", err)
+    filepath.Walk(root, walkFiles)
 
 }
