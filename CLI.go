@@ -32,6 +32,11 @@ type File struct {
     Children        []File      `json:"Children"` 
 }
 
+type Pair struct {
+    File    os.FileInfo
+    Path    string
+}
+
 var config *Config
 var counter int = 0
 
@@ -54,19 +59,38 @@ func init() {
     flag.StringVar(&config.Output, "output", outputDefault, outputDescription)
 }
 
-func walkFiles(path string, file os.FileInfo, err error) error {
-    if strings.ToUpper(config.Output) == "TEXT" {
-        iterateFilesText(path, file)
-    } else if strings.ToUpper(config.Output) == "JSON" {
-        iterateFilesJSON(path, file)
-    } else if strings.ToUpper(config.Output) == "YAML" {
-        iterateFilesYAML(path, file)
+func iterateFiles(path string) {
+    var stack []Pair
+    files, _ := ioutil.ReadDir(path)
+    for i:=0; i<len(files); i++ {
+        stack = append(stack, Pair{files[i],path})
     }
-    return nil
+    for len(stack) > 0 {
+        file := stack[len(stack)-1].File
+        path = stack[len(stack)-1].Path
+        for i:=0; i<len(strings.Split(path, "/")); i++ {
+            fmt.Print(" ")
+        }
+        stack = stack[:len(stack)-1]
+        if (file.IsDir()) {
+            fmt.Print(file.Name() + "/")
+            newpath := path + "/" + file.Name()
+            children, _ := ioutil.ReadDir(newpath)
+            for i:=0; i<len(children); i++ {
+                stack = append(stack, Pair{children[i], newpath})
+            }
+        } else {
+            fmt.Print(file.Name())
+        }
+        
+        fmt.Println()
+    }
+
 }
 
 //Cannot have '/' in filesystem (other than to separate directories). Or else this will get messed up
-func iterateFilesText(path string, file os.FileInfo) {
+func iterateFilesText(path string) {
+    file, _ := os.Lstat(path)
     for i:=0; i<len(strings.Split(path, "/")); i++ {
         fmt.Print(" ")
     }
@@ -81,14 +105,7 @@ func iterateFilesText(path string, file os.FileInfo) {
 }
 
 
-func iterateFilesJSON(path string, file os.FileInfo) {
-
-}
-
-func iterateFilesYAML(path string, file os.FileInfo) {
-
-}
-
+//--recursion--
 
 func recurseFiles(path string) {
     var files []os.FileInfo
@@ -180,7 +197,7 @@ func main() {
     root := config.Path
     fmt.Println("\nStarting file tree output:\n")
     if config.Recursive == false {
-        filepath.Walk(root, walkFiles)
+        iterateFiles(root)
     } else {
         recurseFiles(root)
     }
