@@ -10,7 +10,6 @@ import (
     "strings"
     "encoding/json"
     "time"
-    //"errors"
     "io/ioutil"
     "gopkg.in/yaml.v2"
 
@@ -26,7 +25,7 @@ type File struct {
     ModifiedTime    time.Time   `json:"ModifiedTime"`
     IsLink          bool        `json:"IsLink"`
     IsDir           bool        `json:"IsDir"`
-    LinksTo         string        `json:"LinksTo"`
+    LinksTo         string      `json:"LinksTo"`
     Size            int64       `json:"Size"`
     Name            string      `json:"Name"`
     Children        []File      `json:"Children"` 
@@ -61,10 +60,14 @@ func init() {
 
 func iterateFiles(path string) {
     var stack []Pair
+    var JSONOutput []File
+    var child []File
     files, _ := ioutil.ReadDir(path)
     basedepth := len(strings.Split(path, "/"))
     for i:=0; i<len(files); i++ {
         stack = append(stack, Pair{files[i],path})
+        JSONOutput = append(JSONOutput, toJSON(files[i], path, child))
+
     }
     for len(stack) > 0 {
         file := stack[len(stack)-1].File
@@ -77,15 +80,43 @@ func iterateFiles(path string) {
             fmt.Print(file.Name() + "/")
             newpath := path + "/" + file.Name()
             children, _ := ioutil.ReadDir(newpath)
+            var childrenJSON []File
             for i:=0; i<len(children); i++ {
                 stack = append(stack, Pair{children[i], newpath})
+                childrenJSON = append(childrenJSON, toJSON(children[i], newpath, child))
             }
+            JSONOutput = append(JSONOutput, toJSON(file, path, childrenJSON))
         } else {
             fmt.Print(file.Name())
         }
         
         fmt.Println()
     }
+    for i:=0; i<len(JSONOutput); i++ {
+            jsonOutput, _ := json.MarshalIndent(JSONOutput[i], "", "     ")
+            fmt.Println(string(jsonOutput))
+        } 
+
+}
+
+func toJSON(file os.FileInfo, path string, children []File) File {
+    var isLink bool
+    var linksTo string
+    if (file.Mode()&os.ModeSymlink == os.ModeSymlink) {
+            isLink = true
+            linksTo, _ = filepath.EvalSymlinks(path + "/" + file.Name())
+        } else {
+            isLink = false
+            linksTo = ""
+        }
+    JSONFile := File{ModifiedTime: file.ModTime(), 
+                      IsDir: file.IsDir(),
+                      IsLink: isLink,
+                      LinksTo: linksTo,
+                      Size: file.Size(), 
+                      Name: file.Name(),
+                      Children: children}
+    return JSONFile
 
 }
 
@@ -112,7 +143,6 @@ func recursionHandler(path string) {
     }
 
 }
-
 
 
 func recurseText(path string, depth int) {
@@ -182,9 +212,9 @@ func main() {
     root := config.Path
     fmt.Println("\nStarting file tree output:\n")
     if config.Recursive == false {
-        iterativeHandler(root)
+        iterateFiles(root)
     } else {
-        recursionHander(root)
+        recursionHandler(root)
     }
     
 
