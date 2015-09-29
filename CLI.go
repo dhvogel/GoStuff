@@ -62,13 +62,14 @@ func init() {
 func iterateFiles(path string) {
     var stack []Pair
     files, _ := ioutil.ReadDir(path)
+    basedepth := len(strings.Split(path, "/"))
     for i:=0; i<len(files); i++ {
         stack = append(stack, Pair{files[i],path})
     }
     for len(stack) > 0 {
         file := stack[len(stack)-1].File
         path = stack[len(stack)-1].Path
-        for i:=0; i<len(strings.Split(path, "/")); i++ {
+        for i:=0; i<len(strings.Split(path, "/"))-basedepth; i++ {
             fmt.Print(" ")
         }
         stack = stack[:len(stack)-1]
@@ -88,26 +89,10 @@ func iterateFiles(path string) {
 
 }
 
-//Cannot have '/' in filesystem (other than to separate directories). Or else this will get messed up
-func iterateFilesText(path string) {
-    file, _ := os.Lstat(path)
-    for i:=0; i<len(strings.Split(path, "/")); i++ {
-        fmt.Print(" ")
-    }
-    fmt.Printf("%s", file.Name())
-    if file.IsDir() {
-        fmt.Print("/")
-    }
-    if file.Mode()&os.ModeSymlink == os.ModeSymlink {
-        fmt.Print("* (symlink)")
-    }
-    fmt.Print("\n")
-}
-
 
 //--recursion--
 
-func recurseFiles(path string) {
+func recursionHandler(path string) {
     var files []os.FileInfo
     files, _ = ioutil.ReadDir(path)
     if strings.ToUpper(config.Output) == "TEXT" {
@@ -197,9 +182,9 @@ func main() {
     root := config.Path
     fmt.Println("\nStarting file tree output:\n")
     if config.Recursive == false {
-        iterateFiles(root)
+        iterativeHandler(root)
     } else {
-        recurseFiles(root)
+        recursionHander(root)
     }
     
 
