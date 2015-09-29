@@ -10,6 +10,7 @@ import (
     "strings"
     "encoding/json"
     "time"
+    //"errors"
 )
 
 type Config struct {
@@ -20,12 +21,12 @@ type Config struct {
 
 type File struct {
     ModifiedTime    time.Time   `json:"ModifiedTime"`
-    //(NEED TO FIGURE OUT) IsLink          bool        `json:"IsLink"`
+    IsLink          bool        `json:"IsLink"`
     IsDir           bool        `json:"IsDir"`
     //LinksTo         bool        `json:"LinksTo"`
     Size            int64         `json:"Size"`
     Name            string      `json:"Name"`
-    //Children        []File      `json:"File"`
+    //Children        []File      `json:"File"` 
 }
 
 var config *Config
@@ -66,16 +67,24 @@ func printTextFile(path string, file os.FileInfo) {
     for i:=0; i<len(strings.Split(path, "/")); i++ {
         fmt.Print(" ")
     }
+    // if (file.Name() == nil) {
+    //     err := errors.New("Please enter valid root directory")
+    //     fmt.Println(err)
+    // }
     fmt.Printf("%s", file.Name())
     if file.IsDir() {
         fmt.Print("/")
+    }
+    if file.Mode()&os.ModeSymlink == os.ModeSymlink {
+        fmt.Print("* (symlink)")
     }
     fmt.Print("\n")
 }
 
 func printJSONFile(path string, file os.FileInfo) {
     JSONFile := &File{ModifiedTime: file.ModTime(), 
-                      IsDir: file.IsDir(), 
+                      IsDir: file.IsDir(),
+                      IsLink: file.Mode()&os.ModeSymlink == os.ModeSymlink, 
                       Size: file.Size(), 
                       Name: file.Name()}
     jsonOutput, _ := json.Marshal(JSONFile)
@@ -96,6 +105,7 @@ func main() {
     fmt.Println("Output type:", config.Output)
 
     root := config.Path
+    fmt.Println(root)
     filepath.Walk(root, walkFiles)
 
 }
