@@ -37,13 +37,13 @@ var counter int = 0
 
 func init() {
     const (
-        recursiveDefault = true
+        recursiveDefault = false
         recursiveDescription   = "Trawl files recursively if true, iteratively if not. Default is iterative."
 
         pathDefault = "/Users/dhvogel/Documents/CS341"
         pathDescription   = "Root directory to begin file listing. Default is /Users/dhvogel/Documents/CS341."
 
-        outputDefault = "json"
+        outputDefault = "text"
         outputDescription   = "Accepts 3 arguments, json|yaml|text. Default is text."
     )
     config = &Config{}
